@@ -34,6 +34,7 @@ phytium_initrd_defconfig            - Build for phytium_initrd
 
 # 编译文件系统
 ## 为e2000编译文件系统
+### 编译linux 5.10内核的文件系统
 （1）配置defconfig  
 配置以下文件系统之一：  
 `$ make phytium_e2000_ubuntu_defconfig`  
@@ -45,6 +46,22 @@ phytium_initrd_defconfig            - Build for phytium_initrd
 `$ make`  
 （3）镜像的输出位置  
 生成的根文件系统、内核、bootloader位于output/images目录。 
+
+### 编译linux 4.19内核的文件系统
+（1）将defconfig和支持linux 4.19内核的config fragment合并：  
+`$ ./support/kconfig/merge_config.sh configs/phytium_e2000_xxx_defconfig configs/phytium_e2000_4.19kernel.config`  
+其中`phytium_e2000_xxx_defconfig`为以下文件系统之一：
+```
+phytium_e2000_ubuntu_defconfig
+phytium_e2000_ubuntu_desktop_defconfig
+phytium_e2000_defconfig
+phytium_e2000_debian_defconfig
+phytium_e2000_debian_desktop_defconfig
+``` 
+（2）编译  
+`$ make`  
+（3）镜像的输出位置  
+生成的根文件系统、内核、bootloader位于output/images目录。
 
 ## 清理编译结果
 （1）`$ make clean`  
@@ -218,6 +235,41 @@ $ cd /usr/src/linux-headers
 $ make scripts
 ```
 关于如何编译内核模块，可参考https://www.kernel.org/doc/html/latest/kbuild/modules.html
+
+# buildroot编译新的应用软件
+本节简单介绍如何通过buildroot交叉编译能运行在开发板上的应用软件，完整的教程请参考buildroot用户手册manual.pdf。  
+## buildroot软件包介绍
+buildroot中所有用户态的软件包都在package目录，每个软件包有自己的目录`package/<pkg>`，其中`<pkg>`是小写的软件包名。这个目录包含：  
+（1）`Config.in`文件，用Kconfig语言编写，描述了包的配置选项。  
+（2）`<pkg>.mk`文件，用make编写，描述了包如何构建，即从哪里获取源码，如何编译和安装等。  
+（3）`<pkg>.hash`文件，提供hash值，检查下载文件的完整性，如检查下载的软件包源码是否完整，这个文件是可选的。  
+（4）`*.patch`文件，在编译之前应用于源码的补丁文件，这个文件是可选的。  
+（5）可能对包有用的其他文件。
+## 编写buildroot软件包
+首先创建软件包的目录`package/<pkg>`，然后编写该软件包中的文件。  
+buildroot中的软件包基本上由`Config.in`和`<pkg>.mk`两个文件组成。关于如何编写这两个文件，大家可以参考`package/<vpu-lib>`和
+buildroot用户手册，这里简单概括一下。  
+（1）`Config.in`文件中必须包含启用或禁用该包的选项，而且必须命名为`BR2_PACKAGE_<PKG>`，其中`<PKG>`是大写的软件包名，这个选项的值是布尔类型。
+也可以定义其他功能选项来进一步配置该软件包。然后还必须在`package/Config.in`文件中包含该文件：  
+`source "package/<pkg>/Config.in"`  
+（2）`<pkg>.mk`文件看起来不像普通的Makefile文件，而是一连串的变量定义，而且必须以大写的包名作为变量的前缀。最后以调用软件包的基础结构（package
+infrastructure）结束。变量告诉软件包的基础结构要做什么。  
+对于使用手写Makefile来编译的软件源码，在`<pkg>.mk`中调用generic-package基础结构。generic-package基础结构实现了包的下载、提取、打补丁。
+而配置、编译和安装由`<pkg>.mk`文件描述。`<pkg>.mk`文件中可以设置的变量及其含义，请参考buildroot用户手册。  
+## 编译软件包 
+（1）单独编译软件包
+```
+$ cd xxx/phytium-linux-buildroot
+$ make <pkg>
+```
+编译结果在`output/build/<pkg>-<version>`  
+
+（2）将软件包编译进根文件系统
+```
+在phytium_xxx_defconfig中添加一行BR2_PACKAGE_<PKG>=y
+$ make phytium_xxx_defconfig
+$ make
+```
 
 # FAQ
 1. Ubuntu文件系统桌面无法登陆问题?

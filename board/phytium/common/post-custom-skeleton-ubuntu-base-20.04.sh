@@ -198,6 +198,9 @@ full_rtf()
 main()
 {
 	# $1 - the current rootfs directory, skeleton-custom or target
+	if [ ! -d $1/lib/modules ]; then
+		make linux-rebuild
+	fi
 	ROOTPATH=${1}/usr/src/linux-headers
 	KERNELVERSION=`ls $1/lib/modules`
 	cd ${1}/lib/modules/${KERNELVERSION}/build

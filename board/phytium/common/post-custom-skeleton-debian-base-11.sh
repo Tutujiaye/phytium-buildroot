@@ -57,7 +57,6 @@ do_distrorfs_first_stage() {
     fi
 
     sudo chown 0:0  $RFSDIR
-    #[ $1 != amd64 -a ! -f $RFSDIR/usr/bin/qemu-${tgtarch}-static ] && cp $(which qemu-${tgtarch}-static) $RFSDIR/usr/bin
     sudo mkdir -p $2/usr/local/bin
     sudo cp -f board/phytium/common/debian-package-installer $RFSDIR/usr/local/bin/
     sudo cp -r   output/modules $RFSDIR/lib
@@ -80,6 +79,7 @@ do_distrorfs_first_stage() {
 	export LANG=zh_CN.UTF-8
 	sudo debootstrap --arch=$1 --foreign bullseye $RFSDIR  http://mirrors.163.com/debian/
 
+	[ $1 != amd64 -a ! -f $RFSDIR/usr/bin/qemu-${tgtarch}-static ] && sudo cp $(which qemu-${tgtarch}-static) $RFSDIR/usr/bin
 	echo "installing for second-stage ..."
 	export LC_ALL="zh_CN.UTF-8" && export LANGUAGE="zh_CN:zh" && export LANG="zh_CN.UTF-8"
 	#DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=zh_CN.UTF-8 LANGUAGE=zh_CN:zh LANG=zh_CN.UTF-8 \
@@ -101,7 +101,12 @@ do_distrorfs_first_stage() {
 	fi
 
    # sudo chroot $RFSDIR systemctl enable systemd-rootfs-resize
+    file_s=$(sudo find $RFSDIR -perm -4000)
     sudo chown -R $USER:$GROUPS $RFSDIR
+    for f in $file_s; do
+        sudo chmod u+s $f
+    done
+    sudo chmod u+s $RFSDIR/sbin/unix_chkpwd
 
     if [ $distro = bullseye ]; then
 	echo debian,11 | tee $RFSDIR/etc/.firststagedone 1>/dev/null
@@ -191,6 +196,9 @@ full_rtf()
 main()
 {
 	# $1 - the current rootfs directory, skeleton-custom or target
+	if [ ! -d $1/lib/modules ]; then
+		make linux-rebuild
+	fi
 	ROOTPATH=${1}/usr/src/linux-headers
 	KERNELVERSION=`ls $1/lib/modules`
 	cd ${1}/lib/modules/${KERNELVERSION}/build

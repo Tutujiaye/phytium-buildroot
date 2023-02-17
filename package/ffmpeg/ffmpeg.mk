@@ -19,7 +19,7 @@ endif
 FFMPEG_CPE_ID_VENDOR = ffmpeg
 
 FFMPEG_CONF_OPTS = \
-	--prefix=/usr \
+	--prefix=/usr/local \
 	--enable-avfilter \
 	--disable-version3 \
 	--enable-logging \
@@ -576,7 +576,6 @@ FFMPEG_POST_INSTALL_TARGET_HOOKS += FFMPEG_REMOVE_EXAMPLE_SRC_FILES
 
 define FFMPEG_INSTALL_TARGET_CMDS
         $(TARGET_MAKE_ENV) $(MAKE) -C $(@D) install DESTDIR=$(TARGET_DIR)
-	cp $(TARGET_DIR)/usr/lib/libavcodec.so.58.54.100 $(TARGET_DIR)/usr/lib/aarch64-linux-gnu
 endef
 
 $(eval $(autotools-package))
