@@ -59,9 +59,11 @@ do_distrorfs_first_stage() {
     sudo chown 0:0  $RFSDIR
     sudo mkdir -p $2/usr/local/bin
     sudo cp -f board/phytium/common/debian-package-installer $RFSDIR/usr/local/bin/
-    sudo cp -r   output/modules $RFSDIR/lib
-    sudo rm -rf  output/modules
-    [ -f output/linux-headers.tar.gz ] && sudo tar zxf  output/linux-headers.tar.gz -C $RFSDIR
+    mv ${BUILD_DIR}/modules $RFSDIR/lib
+    if [ -d ${BUILD_DIR}/linux-headers-${KERNELVERSION} ]; then
+	sudo mkdir -p $RFSDIR/usr/src/
+	sudo mv ${BUILD_DIR}/linux-headers-${KERNELVERSION} $RFSDIR/usr/src/
+    fi
     packages_list=board/phytium/common/$3
     [ ! -f $packages_list ] && echo $packages_list not found! && exit 1
 
@@ -193,38 +195,111 @@ full_rtf()
 	fi
 }
 
+deploy_kernel_headers_510 () {
+	pdir=$1
+	version=$2
+	srctree=$pdir/lib/modules/$version/source
+	objtree=$pdir/lib/modules/$version/build
+	cd $objtree
+	mkdir debian
+
+	(
+		cd $srctree
+		find . arch/arm64 -maxdepth 1 -name Makefile\*
+		find include scripts -type f -o -type l
+		find arch/arm64 -name Kbuild.platforms -o -name Platform
+		find $(find arch/arm64 -name include -o -name scripts -type d) -type f
+	) > debian/hdrsrcfiles
+
+	{
+		if grep -q "^CONFIG_STACK_VALIDATION=y" include/config/auto.conf; then
+			echo tools/objtool/objtool
+		fi
+
+		find arch/arm64/include Module.symvers include scripts -type f
+
+		if grep -q "^CONFIG_GCC_PLUGINS=y" include/config/auto.conf; then
+			find scripts/gcc-plugins -name \*.so
+		fi
+	} > debian/hdrobjfiles
+
+	destdir=$pdir/usr/src/linux-headers-$version
+	mkdir -p $destdir
+	tar -c -f - -C $srctree -T debian/hdrsrcfiles | tar -xf - -C $destdir
+	tar -c -f - -T debian/hdrobjfiles | tar -xf - -C $destdir
+	rm -rf debian
+
+	# copy .config manually to be where it's expected to be
+	cp .config $destdir/.config
+	find $destdir -name "*.o" -type f -exec rm -rf {} \;
+	cd $pdir
+	cd ../..
+	cp -r board/phytium/common/linux-5.10/scripts $destdir
+
+	rm -rf $srctree
+	rm -rf $objtree
+	ln -s /usr/src/linux-headers-$version $pdir/lib/modules/$version/build
+}
+
+deploy_kernel_headers_419 () {
+	pdir=$1
+	version=$2
+	srctree=$pdir/lib/modules/$version/source
+	objtree=$pdir/lib/modules/$version/build
+	cd $objtree
+	mkdir debian
+
+	(cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl) > "$objtree/debian/hdrsrcfiles"
+	(cd $srctree; find arch/*/include include scripts -type f -o -type l) >> "$objtree/debian/hdrsrcfiles"
+	(cd $srctree; find arch/arm64 -name module.lds -o -name Kbuild.platforms -o -name Platform) >> "$objtree/debian/hdrsrcfiles"
+	(cd $srctree; find $(find arch/arm64 -name include -o -name scripts -type d) -type f) >> "$objtree/debian/hdrsrcfiles"
+	if grep -q '^CONFIG_STACK_VALIDATION=y' .config ; then
+		(cd $objtree; find tools/objtool -type f -executable) >> "$objtree/debian/hdrobjfiles"
+	fi
+	(cd $objtree; find arch/arm64/include Module.symvers include scripts -type f) >> "$objtree/debian/hdrobjfiles"
+	if grep -q '^CONFIG_GCC_PLUGINS=y' .config ; then
+		(cd $objtree; find scripts/gcc-plugins -name \*.so -o -name gcc-common.h) >> "$objtree/debian/hdrobjfiles"
+	fi
+	destdir=$pdir/usr/src/linux-headers-$version
+	mkdir -p "$destdir"
+	(cd $srctree; tar -c -f - -T -) < "$objtree/debian/hdrsrcfiles" | (cd $destdir; tar -xf -)
+	(cd $objtree; tar -c -f - -T -) < "$objtree/debian/hdrobjfiles" | (cd $destdir; tar -xf -)
+	(cd $objtree; cp .config $destdir/.config) # copy .config manually to be where it's expected to be
+	(cd $srctree; cp --parents tools/include/tools/be_byteshift.h $destdir)
+	(cd $srctree; cp --parents tools/include/tools/le_byteshift.h $destdir)
+	find $destdir -name "*.o" -type f -exec rm -rf {} \;
+	cd $pdir
+	cd ../..
+	cp -r board/phytium/common/linux-4.19/scripts $destdir
+	rm -rf "$objtree/debian"
+
+	rm -rf $srctree
+	rm -rf $objtree
+	ln -sf "/usr/src/linux-headers-$version" "$pdir/lib/modules/$version/build"
+}
+
 main()
 {
 	# $1 - the current rootfs directory, skeleton-custom or target
 	if [ ! -d $1/lib/modules ]; then
 		make linux-rebuild
 	fi
-	ROOTPATH=${1}/usr/src/linux-headers
+
 	KERNELVERSION=`ls $1/lib/modules`
-	cd ${1}/lib/modules/${KERNELVERSION}/build
 	if grep -Eq "^BR2_ROOTFS_LINUX_HEADERS=y$" ${BR2_CONFIG}; then
-		sudo mkdir -p ${ROOTPATH}
-		sudo cp --parents $(find  -type f -name "Makefile*" -o -name "Kconfig*")  ${ROOTPATH}
-        	sudo cp -a  arch/arm64/include  ${ROOTPATH}
-		sudo cp -a .config      ${ROOTPATH}
-		sudo cp  --parents arch/arm64/kernel/module.lds  ${ROOTPATH}
-		sudo cp  --parents tools/include/tools/le_byteshift.h ${ROOTPATH}
-		sudo cp  --parents tools/include/tools/be_byteshift.h ${ROOTPATH}
-        	sudo cp Module.symvers  ${ROOTPATH}
-		sudo cp -a  arch/arm64/include/asm     ${ROOTPATH}/include
-		sudo cp -a  arch/arm64/include/generated/asm   ${ROOTPATH}/include
-		sudo cp -a  include   ${ROOTPATH}
-		sudo cp -a  scripts   ${ROOTPATH}
-        	cd   ${1}
-		sudo tar zcvf linux-headers.tar.gz  usr/src/linux-headers
-		sudo mv linux-headers.tar.gz  ../
+		if [[ ${KERNELVERSION} = 5.10* ]];then
+			deploy_kernel_headers_510 $1 ${KERNELVERSION}
+			mv $1/usr/src/linux-headers-${KERNELVERSION} ${BUILD_DIR}/
+		elif [[ ${KERNELVERSION} = 4.19* ]];then
+			deploy_kernel_headers_419 $1 ${KERNELVERSION}
+			mv $1/usr/src/linux-headers-${KERNELVERSION} ${BUILD_DIR}/
+		else
+			echo "error: linux kernel version is neither 4.19 nor 5.10."
+		fi
 	fi
-	cd   ${1}
-	sudo rm -rf ${1}/lib/modules/${KERNELVERSION}/build
-	sudo rm -rf ${1}/lib/modules/${KERNELVERSION}/source
-	sudo mv ${1}/lib/modules  ../
-	sudo rm -rf ${1}/*
-        cd ../../
+	mv $1/lib/modules ${BUILD_DIR}/
+	rm -rf $1/*
+
 	# run first stage do_distrorfs_first_stage arm64 ${1} ubuntu-additional_packages_list focal ubuntu
 	do_distrorfs_first_stage $(arch_type) ${1} ubuntu-additional_packages_list bullseye  debian $(plat_name) $(full_rtf)
 
