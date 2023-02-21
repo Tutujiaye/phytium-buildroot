@@ -2461,6 +2461,7 @@ menu "Security"
 	source "package/semodule-utils/Config.in"
 	source "package/setools/Config.in"
 	source "package/urandom-scripts/Config.in"
+	source "package/phytium-optee/Config.in"
 endmenu
 
 menu "Shell and utilities"

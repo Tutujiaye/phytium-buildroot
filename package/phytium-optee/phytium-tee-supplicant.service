@@ -1,0 +1,10 @@
+[Unit]
+Description=phytium tee supplicant
+
+[Service]
+User=root
+ExecStart=tee-supplicant /dev/teepriv0
+Restart=always
+
+[Install]
+WantedBy=sysinit.target

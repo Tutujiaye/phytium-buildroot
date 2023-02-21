@@ -305,7 +305,7 @@ main()
 
 	# change the hostname to "platforms-Ubuntu"
 	echo $(plat_name)-debian > ${1}/etc/hostname
-        
+
 	if ! grep -q  "$(plat_name)-debian"  ${1}/etc/hosts; then
         	echo 127.0.0.1   $(plat_name)-debian | sudo tee -a ${1}/etc/hosts 1>/dev/null
         fi
@@ -326,6 +326,14 @@ main()
         if grep -Eq "^BR2_PACKAGE_FFMPEG=y$" ${BR2_CONFIG}; then
                 make ffmpeg-rebuild ${O:+O=$O}
         fi
+
+	if grep -Eq "^BR2_PACKAGE_PHYTIUM_OPTEE=y$" ${BR2_CONFIG}; then
+		make phytium-optee-rebuild ${O:+O=$O}
+		# add tee-supplicant systemd service
+		cp -dpf package/phytium-optee/phytium-tee-supplicant.service $RFSDIR/lib/systemd/system/phytium-tee-supplicant.service
+		# default set start tee-supplicant
+		ln -sf /lib/systemd/system/phytium-tee-supplicant.service $RFSDIR/etc/systemd/system/sysinit.target.wants/phytium-tee-supplicant.service
+	fi
 
 	exit $?
 }

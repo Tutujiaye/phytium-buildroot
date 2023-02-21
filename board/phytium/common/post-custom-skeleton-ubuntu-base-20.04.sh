@@ -94,7 +94,7 @@ do_distrorfs_first_stage() {
 	sudo chroot $RFSDIR dpkg --configure -a
     fi
 
-    sudo chroot $RFSDIR ubuntu-package-installer $1 $distro $5 $3 $6 $7 
+    sudo chroot $RFSDIR ubuntu-package-installer $1 $distro $5 $3 $6 $7
 	if [ "x$?" != "x0" ]; then
 		 do_recover_from_error "ubuntu-package-installer failed"
 		exit 1
@@ -328,6 +328,14 @@ main()
 	if grep -Eq "^BR2_PACKAGE_FFMPEG=y$" ${BR2_CONFIG}; then
                 make ffmpeg-rebuild ${O:+O=$O}
         fi
+
+	if grep -Eq "^BR2_PACKAGE_PHYTIUM_OPTEE=y$" ${BR2_CONFIG}; then
+		make phytium-optee-rebuild ${O:+O=$O}
+		# add tee-supplicant systemd service
+		cp -dpf package/phytium-optee/phytium-tee-supplicant.service $RFSDIR/lib/systemd/system/phytium-tee-supplicant.service
+		# default set start tee-supplicant
+		ln -sf /lib/systemd/system/phytium-tee-supplicant.service $RFSDIR/etc/systemd/system/sysinit.target.wants/phytium-tee-supplicant.service
+	fi
 
 	exit $?
 }
