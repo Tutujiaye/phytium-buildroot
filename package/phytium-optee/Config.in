@@ -23,7 +23,6 @@ config BR2_PACKAGE_PHYTIUM_OPTEE_BOARD
 	help
 	  Value for the target board directive provided to
 	  Phytium OPTEE build script. Support:
-	  "e2000demod", debug version;
-	  "e2000demor", release version.
+	  "e2000ddemo", "e2000qdemo".
 
 endif # BR2_PACKAGE_PHYTIUM_OPTEE

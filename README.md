@@ -6,7 +6,7 @@ phytium-linux-buildroot基于Buildroot，适配了飞腾e2000开发板，支持u
 ## 系统要求
 Buildroot被设计为在Linux系统上运行，我们在ubuntu20.04系统上运行phytium-linux-buildroot。  
 需要安装如下软件包：  
-`$ sudo apt-get install debootstrap qemu-system-common qemu-user-static binfmt-support`
+`$ sudo apt-get install debootstrap qemu-system-common qemu-user-static binfmt-support debian-archive-keyring`
 
 ## 下载phytium-linux-buildroot
 `$ git clone https://gitee.com/phytium_embedded/phytium-linux-buildroot.git`
@@ -34,22 +34,9 @@ phytium_initrd_defconfig            - Build for phytium_initrd
 
 # 编译文件系统
 ## 为e2000编译文件系统
-### 编译linux 5.10内核的文件系统
-（1）配置defconfig  
-配置以下文件系统之一：  
-`$ make phytium_e2000_ubuntu_defconfig`  
-`$ make phytium_e2000_ubuntu_desktop_defconfig`  
-`$ make phytium_e2000_defconfig`  
-`$ make phytium_e2000_debian_defconfig`  
-`$ make phytium_e2000_debian_desktop_defconfig`  
-（2）编译  
-`$ make`  
-（3）镜像的输出位置  
-生成的根文件系统、内核、bootloader位于output/images目录。 
-
-### 编译linux 4.19内核的文件系统
-（1）将defconfig和支持linux 4.19内核的config fragment合并：  
-`$ ./support/kconfig/merge_config.sh configs/phytium_e2000_xxx_defconfig configs/phytium_e2000_4.19kernel.config`  
+### 编译默认配置的文件系统
+（1）加载defconfig   
+`$ make phytium_e2000_xxx_defconfig`  
 其中`phytium_e2000_xxx_defconfig`为以下文件系统之一：
 ```
 phytium_e2000_ubuntu_defconfig
@@ -57,11 +44,42 @@ phytium_e2000_ubuntu_desktop_defconfig
 phytium_e2000_defconfig
 phytium_e2000_debian_defconfig
 phytium_e2000_debian_desktop_defconfig
-``` 
+```  
 （2）编译  
 `$ make`  
 （3）镜像的输出位置  
-生成的根文件系统、内核、bootloader位于output/images目录。
+生成的根文件系统、内核位于output/images目录。 
+
+### 更换文件系统的linux内核版本
+defconfig中的内核版本默认是linux 5.10。我们支持在编译文件系统时将内核版本更换为linux 4.19，linux 4.19 rt，linux 5.10 rt。
+关于e2000 linux内核的信息请参考：`https://gitee.com/phytium_embedded/phytium-linux-kernel`  
+更换内核版本的操作步骤为：  
+（1）使用phytium_e2000_xxx_defconfig作为基础配置项，合并支持其他内核版本的配置：  
+`$ ./support/kconfig/merge_config.sh configs/phytium_e2000_xxx_defconfig configs/phytium_e2000_linux_xxx.config`  
+其中`configs/phytium_e2000_linux_xxx.config`为以下配置片段文件之一：
+```
+configs/phytium_e2000_linux_4.19.config
+configs/phytium_e2000_linux_4.19_rt.config
+configs/phytium_e2000_linux_5.10_rt.config
+```
+这三个文件分别对应于linux 4.19，linux 4.19 rt，linux 5.10 rt内核。  
+（2）编译  
+`$ make`  
+（3）镜像的输出位置  
+生成的根文件系统、内核位于output/images目录。
+
+### 支持Pythium-optee
+本项目还支持编译Pythium-optee，关于Pythium-optee的信息请参考：`https://gitee.com/phytium_embedded/phytium-optee`  
+defconfig默认不编译Pythium-optee，如果需要编译Pythium-optee请执行：  
+（1）使用phytium_e2000_xxx_defconfig作为基础配置项，合并支持optee的配置：  
+`$ ./support/kconfig/merge_config.sh configs/phytium_e2000_xxx_defconfig configs/phytium_e2000_optee.config`  
+目前Pythium-optee支持的开发板有e2000d demo、e2000q demo，默认配置为e2000d demo。如果需要更改，请将
+`configs/phytium_e2000_optee.config`中`BR2_PACKAGE_PHYTIUM_OPTEE_BOARD`变量的值修改为`"e2000qdemo"`。  
+（2）编译  
+`$ make`  
+（3）镜像的输出位置  
+生成的根文件系统、内核、TEE OS位于output/images目录。  
+后续部署及使用方法，请参考`https://gitee.com/phytium_embedded/phytium-embedded-docs/tree/master/optee`  
 
 ## 清理编译结果
 （1）`$ make clean`  
@@ -98,7 +116,7 @@ $ make
 （7）编译文件系统  
 `$ make`  
 （8）镜像的输出位置  
-生成的根文件系统、内核、bootloader位于output/images目录。
+生成的根文件系统、内核位于output/images目录。
 
 # 在开发板上启动文件系统
 ## 在e2000开发板上启动文件系统
@@ -227,14 +245,9 @@ $ make
 ```
 
 # ubuntu及debian系统支持linux-headers
-linux-headers位于根系统的/usr/src目录，用于在开发板上编译内核模块。  
-由于linux-headers是在x86_64主机交叉编译的，直接在开发板使用它来编译内核模块会报错：`/bin/sh: 1: scripts/basic/fixdep: Exec format error`。
-因此需要在开发板上本地重新编译scripts：
-```
-$ cd /usr/src/linux-headers
-$ make scripts
-```
-关于如何编译内核模块，可参考https://www.kernel.org/doc/html/latest/kbuild/modules.html
+linux-headers用于在开发板上编译内核外部模块，buildroot将`linux-headers-$(uname -r)`安装在根文件系统的/usr/src目录下，
+并为它创建了一个软链接``/lib/modules/$(uname -r)/build``。  
+关于如何编译内核外部模块，可参考https://www.kernel.org/doc/html/latest/kbuild/modules.html
 
 # buildroot编译新的应用软件
 本节简单介绍如何通过buildroot交叉编译能运行在开发板上的应用软件，完整的教程请参考buildroot用户手册manual.pdf。  
