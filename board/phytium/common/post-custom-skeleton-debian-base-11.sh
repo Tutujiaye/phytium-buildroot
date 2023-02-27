@@ -79,7 +79,7 @@ do_distrorfs_first_stage() {
     if [ ! -d $RFSDIR/debootstrap ]; then
         echo "testdeboot"
 	export LANG=zh_CN.UTF-8
-	sudo debootstrap --arch=$1 --foreign bullseye $RFSDIR  http://mirrors.163.com/debian/
+	sudo debootstrap --arch=$1 --foreign bullseye $RFSDIR   https://mirrors.tuna.tsinghua.edu.cn/debian/
 
 	[ $1 != amd64 -a ! -f $RFSDIR/usr/bin/qemu-${tgtarch}-static ] && sudo cp $(which qemu-${tgtarch}-static) $RFSDIR/usr/bin
 	echo "installing for second-stage ..."

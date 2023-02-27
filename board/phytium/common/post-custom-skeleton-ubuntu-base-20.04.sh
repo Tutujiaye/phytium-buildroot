@@ -78,12 +78,12 @@ do_distrorfs_first_stage() {
     if [ ! -d $RFSDIR/debootstrap ]; then
         echo "testdeboot"
 	export LANG=en_US.UTF-8
-	sudo debootstrap --arch=$1 --foreign focal $RFSDIR
+	sudo debootstrap --arch=$1 --foreign focal $RFSDIR  https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports
 
 	[ $1 != amd64 -a ! -f $RFSDIR/usr/bin/qemu-${tgtarch}-static ] && sudo cp $(which qemu-${tgtarch}-static) $RFSDIR/usr/bin
 	echo "installing for second-stage ..."
 	DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C \
-	sudo chroot $RFSDIR /debootstrap/debootstrap  --second-stage
+	sudo chroot $RFSDIR /debootstrap/debootstrap  --second-stage  
 	if [ "x$?" != "x0" ]; then
 		do_recover_from_error "debootstrap failed in second-stage"
 		exit 1
