@@ -36,7 +36,6 @@ do_distrorfs_first_stage() {
     [ -z $RFSDIR ] && echo No RootFS exist! && return
     [ -f $RFSDIR/etc/.firststagedone ] && echo $RFSDIR firststage exist! && return
     [ -f /etc/.firststagedone -a ! -f /proc/uptime ] && return
-    mkdir -p $RFSDIR/lib/modules
 
     if [ $1 = arm64 ]; then
 	tgtarch=aarch64
@@ -58,11 +57,6 @@ do_distrorfs_first_stage() {
 
     mkdir -p $2/usr/local/bin
     cp -f board/phytium/common/ubuntu-package-installer $RFSDIR/usr/local/bin/
-    mv ${BUILD_DIR}/modules $RFSDIR/lib
-    if [ -d ${BUILD_DIR}/linux-headers-${KERNELVERSION} ]; then
-	mkdir -p $RFSDIR/usr/src/
-	mv ${BUILD_DIR}/linux-headers-${KERNELVERSION} $RFSDIR/usr/src/
-    fi
     packages_list=board/phytium/common/$3
     [ ! -f $packages_list ] && echo $packages_list not found! && exit 1
 
@@ -283,23 +277,6 @@ deploy_kernel_headers_419 () {
 main()
 {
 	# $1 - the current rootfs directory, skeleton-custom or target
-	if [ ! -d $1/lib/modules ]; then
-		make linux-rebuild
-	fi
-
-	KERNELVERSION=`ls $1/lib/modules`
-	if grep -Eq "^BR2_ROOTFS_LINUX_HEADERS=y$" ${BR2_CONFIG}; then
-		if [[ ${KERNELVERSION} = 5.10* ]];then
-			deploy_kernel_headers_510 $1 ${KERNELVERSION}
-			mv $1/usr/src/linux-headers-${KERNELVERSION} ${BUILD_DIR}/
-		elif [[ ${KERNELVERSION} = 4.19* ]];then
-			deploy_kernel_headers_419 $1 ${KERNELVERSION}
-			mv $1/usr/src/linux-headers-${KERNELVERSION} ${BUILD_DIR}/
-		else
-			echo "error: linux kernel version is neither 4.19 nor 5.10."
-		fi
-	fi
-	mv $1/lib/modules ${BUILD_DIR}/
 	rm -rf $1/*
 
 	# run first stage do_distrorfs_first_stage arm64 ${1} ubuntu-additional_packages_list focal ubuntu
@@ -310,6 +287,21 @@ main()
 
 	if [ $distro = focal ]; then
 		sed -i "s/float(n\[0\])/float(n[0].split()[0])/" ${1}/usr/share/pyshared/lsb_release.py
+	fi
+
+	if [ ! -d $1/lib/modules ]; then
+		make linux-rebuild ${O:+O=$O}
+	fi
+
+	KERNELVERSION=`ls $1/lib/modules`
+	if grep -Eq "^BR2_ROOTFS_LINUX_HEADERS=y$" ${BR2_CONFIG}; then
+		if [[ ${KERNELVERSION} = 5.10* ]];then
+			deploy_kernel_headers_510 $1 ${KERNELVERSION}
+		elif [[ ${KERNELVERSION} = 4.19* ]];then
+			deploy_kernel_headers_419 $1 ${KERNELVERSION}
+		else
+			echo "error: linux kernel version is neither 4.19 nor 5.10."
+		fi
 	fi
 
         if grep -Eq "^BR2_PACKAGE_XORG_ROGUE_UMLIBS=y$" ${BR2_CONFIG}; then
