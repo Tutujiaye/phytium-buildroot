@@ -6,7 +6,16 @@ config BR2_PACKAGE_VPU_LIB
 
           https://gitee.com/phytium_embedded/vpu-lib.git
 
+if BR2_PACKAGE_VPU_LIB
+
 config BR2_PACKAGE_VPU_LIB_CPU_MODEL
         string "cpu model"
         help
           This is a comment that defines cpu model is, d2000 or e2000
+
+config BR2_PACKAGE_VPU_LIB_FIRMWARE
+        bool "vpu-lib firmware"
+        help
+          Install only vpu-lib firmware and do not install other files.
+
+endif

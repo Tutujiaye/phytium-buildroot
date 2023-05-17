@@ -1,12 +1,38 @@
 # phytium-linux-buildroot
 Buildroot是一种简单、高效且易于使用的工具，可以通过交叉编译生成嵌入式Linux系统。Buildroot的用户手册位于docs/manual/manual.pdf。  
-phytium-linux-buildroot基于Buildroot，适配了飞腾e2000开发板，支持ubuntu文件系统、debian文件系统、initrd文件系统、buildroot最小文件系统的编译。
+phytium-linux-buildroot基于Buildroot，适配了飞腾e2000、d2000开发板，支持ubuntu文件系统、debian文件系统、initrd文件系统、buildroot最小文件系统的编译。
 
 # 开发环境
 ## 系统要求
-Buildroot被设计为在Linux系统上运行，我们在ubuntu20.04系统上运行phytium-linux-buildroot。  
-需要安装如下软件包：  
-`$ sudo apt-get install debootstrap qemu-system-common qemu-user-static binfmt-support debian-archive-keyring`
+Buildroot被设计为在Linux系统上运行，我们只支持在ubuntu20.04、ubuntu22.04、debian11这三种主机系统上运行phytium-linux-buildroot，不支持其他系统。
+首先，Buildroot需要主机系统上安装如下Linux程序，请检查是否已安装：
+```
+• Build tools:
+– which
+– sed
+– make (version 3.81 or any later)
+– binutils
+– build-essential (only for Debian based systems)
+– gcc (version 4.8 or any later)
+– g++ (version 4.8 or any later)
+– bash
+– patch
+– gzip
+– bzip2
+– perl (version 5.8.7 or any later)
+– tar
+– cpio
+– unzip
+– rsync
+– file (must be in /usr/bin/file)
+– bc
+• Source fetching tools:
+– wget
+– git
+```
+除此之外，还需要安装如下软件包：  
+`$ sudo apt install debootstrap qemu-user-static binfmt-support debian-archive-keyring`  
+对于debian11系统，需要设置PATH环境变量：`PATH=$PATH:/usr/sbin`  
 
 ## 下载phytium-linux-buildroot
 `$ git clone https://gitee.com/phytium_embedded/phytium-linux-buildroot.git`
@@ -68,18 +94,26 @@ configs/phytium_e2000_linux_5.10_rt.config
 （3）镜像的输出位置  
 生成的根文件系统、内核位于output/images目录。
 
-### 支持Pythium-optee
-本项目还支持编译Pythium-optee，关于Pythium-optee的信息请参考：`https://gitee.com/phytium_embedded/phytium-optee`  
-defconfig默认不编译Pythium-optee，如果需要编译Pythium-optee请执行：  
+### 支持Phytium-optee
+本项目还支持编译Phytium-optee，关于Phytium-optee的信息请参考：`https://gitee.com/phytium_embedded/phytium-optee`  
+defconfig默认不编译Phytium-optee，如果需要编译Phytium-optee请执行：  
 （1）使用phytium_e2000_xxx_defconfig作为基础配置项，合并支持optee的配置：  
 `$ ./support/kconfig/merge_config.sh configs/phytium_e2000_xxx_defconfig configs/phytium_e2000_optee.config`  
-目前Pythium-optee支持的开发板有e2000d demo、e2000q demo，默认配置为e2000d demo。如果需要更改，请将
+目前Phytium-optee支持的开发板有e2000d demo、e2000q demo，默认配置为e2000d demo。如果需要更改，请将
 `configs/phytium_e2000_optee.config`中`BR2_PACKAGE_PHYTIUM_OPTEE_BOARD`变量的值修改为`"e2000qdemo"`。  
+注意：phytium-linux-buildroot的最新代码已包含了Phytium-optee的依赖，如果您使用的phytium-linux-buildroot不是最新版本，
+在执行编译之前需要额外安装依赖：  
+```
+sudo apt install python3-pip
+pip install pycryptodome
+pip install pyelftools
+pip install cryptography
+```
 （2）编译  
 `$ make`  
 （3）镜像的输出位置  
 生成的根文件系统、内核、TEE OS位于output/images目录。  
-后续部署及使用方法，请参考`https://gitee.com/phytium_embedded/phytium-embedded-docs/tree/master/optee`  
+后续部署及使用方法，请参考`https://gitee.com/phytium_embedded/phytium-embedded-docs/tree/master/optee`
 
 ## 清理编译结果
 （1）`$ make clean`  
@@ -130,7 +164,7 @@ $ sudo mkfs.ext4 /dev/sdb1
 $ sudo mkfs.ext4 /dev/sdb2
 $ sudo mount /dev/sdb1 /mnt
 $ sudo cp xxx/phytium-linux-buildroot/output/images/Image /mnt
-$ sudo cp xxx/phytium-linux-buildroot/output/images/e2000q-demo-ddr4.dtb /mnt
+$ sudo cp xxx/phytium-linux-buildroot/output/images/e2000q-demo-board.dtb /mnt
 $ sync
 $ sudo umount /dev/sdb1
 $ sudo mount /dev/sdb2 /mnt
@@ -147,7 +181,7 @@ SATA盘：
 ```
 =>setenv bootargs console=ttyAMA1,115200  audit=0 earlycon=pl011,0x2800d000 root=/dev/sda2 rw; 
 =>ext4load scsi 0:1 0x90100000 Image;
-=>ext4load scsi 0:1 0x90000000 e2000q-demo-ddr4.dtb; 
+=>ext4load scsi 0:1 0x90000000 e2000q-demo-board.dtb;
 =>booti 0x90100000 - 0x90000000
 ```
 U盘：
@@ -155,7 +189,7 @@ U盘：
 =>setenv bootargs console=ttyAMA1,115200  audit=0 earlycon=pl011,0x2800d000 root=/dev/sda2 rootdelay=5 rw;
 =>usb start
 =>ext4load usb 0:1 0x90100000 Image;
-=>ext4load usb 0:1 0x90000000 e2000q-demo-ddr4.dtb; 
+=>ext4load usb 0:1 0x90000000 e2000q-demo-board.dtb;
 =>booti 0x90100000 - 0x90000000
 ```
 
@@ -204,12 +238,11 @@ U盘：
 
 # ubuntu系统安装桌面
 ## e2000 ubuntu系统安装桌面
-`phytium_e2000_ubuntu_desktop_defconfig`默认安装了kde桌面，配置并编译它就可以获得带kde桌面的
+`phytium_e2000_ubuntu_desktop_defconfig`默认安装了xfce桌面，配置并编译它就可以获得带xfce桌面的
 ubuntu系统。如果需要在开发板上安装其他桌面，重新配置并编译`phytium_e2000_ubuntu_defconfig`，
 然后在开发板启动这个不带桌面的ubuntu系统：  
 ### 登录  
-ubuntu系统包含了超级用户root，和一个普通用户user，密码和用户名相同。  
-如果普通用户下不能使用sudo，需要在root用户下执行`$ chmod u+s /usr/bin/sudo`   
+ubuntu系统包含了超级用户root，和一个普通用户user，密码和用户名相同。   
 ### 动态获取 IP 地址 
 ```
 $ sudo dhclient
@@ -245,9 +278,37 @@ $ make
 ```
 
 # ubuntu及debian系统支持linux-headers
-linux-headers用于在开发板上编译内核外部模块，buildroot将`linux-headers-$(uname -r)`安装在根文件系统的/usr/src目录下，
-并为它创建了一个软链接``/lib/modules/$(uname -r)/build``。  
-关于如何编译内核外部模块，可参考https://www.kernel.org/doc/html/latest/kbuild/modules.html
+linux-headers包含构建内核外部模块所需的头文件，编译ubuntu和debian的defconfig会生成linux-headers。  
+关于如何编译内核外部模块，可参考https://www.kernel.org/doc/html/latest/kbuild/modules.html  
+
+## 交叉编译内核模块
+编译ubuntu和debian的defconfig，会在`output/target/usr/src`目录中安装linux-headers-version。   
+使用buildroot的工具链来交叉编译内核模块，buildroot工具链位于`output/host/bin`，工具链的sysroot为
+`output/host/aarch64-buildroot-linux-gnu/sysroot`。  
+
+交叉编译内核外部模块的命令为：
+```
+$ make ARCH=arm64 \
+CROSS_COMPILE=/home/xxx/phytium-linux-buildroot/output/host/bin/aarch64-none-linux-gnu- \
+-C /home/xxx/phytium-linux-buildroot/output/target/usr/src/linux-headers-5.10.153-phytium-embeded \
+M=$PWD \
+modules
+```
+
+## 开发板上编译内核模块
+buildroot将linux-headers-version安装在根文件系统的`/usr/src`目录下，
+并为它创建了一个软链接`/lib/modules/version/build`。  
+注意，由于linux-headers是在x86-64主机交叉编译生成的，在开发板上直接使用它编译内核模块会报错：  
+`/bin/sh: 1: scripts/basic/fixdep: Exec format error`。  
+因此，需要将x86-64格式的fixdep等文件替换为ARM aarch64格式的（以linux 5.10内核为例）：  
+（1）`scp -r username@host:/home/xxx/phytium-linux-buildroot/board/phytium/common/linux-5.10/scripts /usr/src/linux-headers-5.10.153-phytium-embeded`  
+（2）或者在编译ubuntu和debian的defconfig之前，将board/phytium/common/post-custom-skeleton-ubuntu-base-20.04.sh和
+board/phytium/common/post-custom-skeleton-debian-base-11.sh中的如下两行取消注释，再执行编译。  
+`# cp -r board/phytium/common/linux-5.10/scripts $destdir`  
+`# cp -r board/phytium/common/linux-4.19/scripts $destdir`  
+
+在开发板上编译内核外部模块的命令为：  
+`make -C /lib/modules/5.10.153-phytium-embeded/build M=$PWD modules`
 
 # buildroot编译新的应用软件
 本节简单介绍如何通过buildroot交叉编译能运行在开发板上的应用软件，完整的教程请参考buildroot用户手册manual.pdf。  
@@ -298,3 +359,16 @@ chown -R user:user /home/user
 将user用户加入audio组，可解决user用户下没声音的问题
 gpasswd -a user audio
 ```
+
+3. 下载ubuntu及debian太慢或报错？  
+目前下载ubuntu及debian的源为清华大学镜像，如果遇到下载很慢，或者下载报错：
+`E: Unable to fetch some archives, maybe run apt-get update or try with --fix-missing?`
+从而导致编译的phytium_e2000_debian_desktop_defconfig或phytium_e2000_ubuntu_desktop_defconfig没有桌面问题，
+请将清华源更换为中科大源，即将以下文件
+```
+board/phytium/common/post-custom-skeleton-ubuntu-base-20.04.sh
+board/phytium/common/ubuntu-package-installer
+board/phytium/common/post-custom-skeleton-debian-base-11.sh
+board/phytium/common/debian-package-installer
+```
+中的`mirrors.tuna.tsinghua.edu.cn`改为`mirrors.ustc.edu.cn`

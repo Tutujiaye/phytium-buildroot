@@ -17,13 +17,13 @@ PHYTIUM_OPTEE_OS_SDK = $(STAGING_DIR)/lib/optee/export-ta_arm64
 PHYTIUM_OPTEE_CLIENT_SDK = $(STAGING_DIR)/usr
 
 # build optee os need this package in host
-PHYTIUM_OPTEE_DEPENDENCIES = host-openssl host-python3 host-python-pycryptodomex host-python-pyelftools
+PHYTIUM_OPTEE_DEPENDENCIES = host-openssl host-python3 host-python-pycryptodomex host-python-pyelftools host-python-cryptography
 
 PHYTIUM_OPTEE_INSTALL_IMAGES = YES
 PHYTIUM_OPTEE_INSTALL_STAGING = YES
 
 define PHYTIUM_OPTEE_BUILD_CMDS
-	cd $(@D); ./build_all clean; CROSS_COMPILE64=$(TARGET_CROSS) ./build_all $(PHTYIUM_OPTEE_TARGET_BOARD) d
+	cd $(@D); ./build_all clean; CROSS_COMPILE64=$(TARGET_CROSS) PYTHON3="$(HOST_DIR)/bin/python3" ./build_all $(PHTYIUM_OPTEE_TARGET_BOARD) d
 endef
 
 # install lib & ta & client into rootfs

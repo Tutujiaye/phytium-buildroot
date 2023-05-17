@@ -230,7 +230,7 @@ deploy_kernel_headers_510 () {
 	find $destdir -name "*.o" -type f -exec rm -rf {} \;
 	cd $pdir
 	cd ../..
-	cp -r board/phytium/common/linux-5.10/scripts $destdir
+	# cp -r board/phytium/common/linux-5.10/scripts $destdir
 
 	rm -rf $srctree
 	rm -rf $objtree
@@ -266,7 +266,7 @@ deploy_kernel_headers_419 () {
 	find $destdir -name "*.o" -type f -exec rm -rf {} \;
 	cd $pdir
 	cd ../..
-	cp -r board/phytium/common/linux-4.19/scripts $destdir
+	# cp -r board/phytium/common/linux-4.19/scripts $destdir
 	rm -rf "$objtree/debian"
 
 	rm -rf $srctree
