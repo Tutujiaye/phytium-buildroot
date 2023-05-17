@@ -7,6 +7,11 @@ rootfs_chown() {
 
 	[ -d /var/cache/man ] && chown -R man:root /var/cache/man
 	[ -d /var/lib/sddm ] && chown -R sddm:sddm /var/lib/sddm
+	if [ -d /var/lib/lightdm ]; then
+                chown -R lightdm:lightdm /var/lib/lightdm || true
+                chmod 0750 /var/lib/lightdm
+        fi
+
 	chown -R user:user /home/user
 	if [ $? -eq 0 ]
 	then

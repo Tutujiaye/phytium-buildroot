@@ -52,7 +52,7 @@ do_distrorfs_second_stage() {
 
     echo installed additional packages.
     if [ $6 = desktop ]; then
-	for pkg in task-kde-desktop ; do
+	for pkg in task-xfce-desktop ; do
                 DEBIAN_FRONTEND=noninteractive apt -y install $pkg || true
 	done
     	if [ $5 = D2000 ]; then 
@@ -60,11 +60,14 @@ do_distrorfs_second_stage() {
 		sed -i '1 a /usr/local/lib' /etc/ld.so.conf.d/aarch64-linux-gnu.conf
 		ldconfig
         	ln -sf /usr/local/bin/Xorg  /usr/bin/X
+               sed -i '2 a rm -rf /home/*/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml' /etc/X11/Xsession.d/55xfce4-session
+               sed -i '17 a Environment="LD_LIBRARY_PATH=/usr/local/lib"' /lib/systemd/system/lightdm.service 
+		gpasswd -a lightdm render
+		gpasswd -a lightdm video
+		gpasswd -a lightdm audio
 	fi
 	usermod -a -G video,render,audio user
-        gpasswd -a sddm render
-        gpasswd -a sddm video
-        gpasswd -a sddm audio
+
     fi
 
     if [ $5 = E2000 ]; then

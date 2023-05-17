@@ -5,6 +5,8 @@ BR2_cortex_a53=y
 # Filesystem
 BR2_TARGET_ROOTFS_EXT2=y
 BR2_TARGET_ROOTFS_EXT2_4=y
+#BR2_ROOTFS_POST_IMAGE_SCRIPT="board/phytium/post-image.sh support/scripts/genimage.sh"
+#BR2_ROOTFS_POST_SCRIPT_ARGS="-c board/phytium/genimage-e2000.cfg"
 
 # custom skeleton
 BR2_ROOTFS_SKELETON_UBUNTU=y
