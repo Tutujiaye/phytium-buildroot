@@ -61,8 +61,6 @@ define ROOTFS_EXT2_CMD
                         EXT2_SIZE_E=$$(($${USED_BLOCK} + 51200))
                 fi
 
-                rm -f $@
-                $(HOST_DIR)/sbin/mkfs.ext$(BR2_TARGET_ROOTFS_EXT2_GEN) $(EXT2_OPTS) $@ "$${EXT2_SIZE_E}K"
 	fi 
 endef
 

@@ -5,3 +5,12 @@ config BR2_PACKAGE_XORG_ROGUE_UMLIBS
 	  should be wrapped.
 
 	  https://gitee.com/phytium_embedded/phytium-rogue-umlibs.git
+
+if BR2_PACKAGE_XORG_ROGUE_UMLIBS
+
+config BR2_PACKAGE_XORG_ROGUE_UMLIBS_FIRMWARE
+	bool "xorg-rogue-umlibs firmware"
+	help
+	  Install only xorg-rogue-umlibs firmware and do not install other files.
+
+endif

@@ -1,0 +1,26 @@
+2023.03.09 changed by Phytium team 
+	We made some changes to buildroot to make it easier for Phytium users to build the system. 
+	We added several defconfig files to the configs directory so that users can build busybox, ubuntu, and debian systems for the Phytium D2000 and E2000 development boards. 
+	In order to support ubuntu and debian, we modified some skeleton-custom related files and created the board/phytium directory. 
+	We made some changes in the linux directory to support linux-headers, which is used to compile kernel external modules. 
+	We modified or added these packages in the package directory: busybox, ffmpeg, igh-ethercat, phytium-optee, rootfs-chown, vpu-lib, xorg-rogue-umlibs. 
+	The external toolchain Arm AArch64 was downgraded from 2021.07 to 2020.11 in order to align the glibc version with the one in ubuntu20.04. 
+
+	Here are the directories or files involved in these changes:
+	Makefile
+	README.md
+	board/phytium
+	configs/phytium_xxx
+	fs/ext2
+	linux
+	package/Config.in
+	package/busybox
+	package/ffmpeg
+	package/igh-ethercat
+	package/phytium-optee
+	package/rootfs-chown
+	package/skeleton-custom
+	package/vpu-lib
+	package/xorg-rogue-umlibs
+	system/Config.in
+	toolchain/toolchain-external
