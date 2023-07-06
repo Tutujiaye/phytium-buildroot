@@ -372,3 +372,11 @@ board/phytium/common/post-custom-skeleton-debian-base-11.sh
 board/phytium/common/debian-package-installer
 ```
 中的`mirrors.tuna.tsinghua.edu.cn`改为`mirrors.ustc.edu.cn`
+
+4. 编译内核时报错`Can't find default configuration "arch/arm64/configs/phytium_defconfig"!`  
+需要删除dl目录中的内核源码，再重新编译：  
+```
+rm -rf dl/linux/
+make linux-dirclean
+make
+```
