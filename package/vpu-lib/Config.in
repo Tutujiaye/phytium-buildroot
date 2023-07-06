@@ -11,7 +11,7 @@ if BR2_PACKAGE_VPU_LIB
 config BR2_PACKAGE_VPU_LIB_CPU_MODEL
         string "cpu model"
         help
-          This is a comment that defines cpu model is, d2000 or e2000
+          This is a comment that defines the cpu model, and the supported value is "d2000".
 
 config BR2_PACKAGE_VPU_LIB_FIRMWARE
         bool "vpu-lib firmware"

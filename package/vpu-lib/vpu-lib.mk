@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-VPU_LIB_VERSION = 1c5de03cadb170d7389ae43bc297592f047f865e
+VPU_LIB_VERSION = 28655c1d76a99db4460a3bc85e766555d568ecee
 VPU_LIB_SITE = https://gitee.com/phytium_embedded/vpu-lib.git
 VPU_LIB_INSTALL_TARGET = YES
 VPU_LIB_SITE_METHOD = git
